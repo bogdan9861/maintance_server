@@ -1,12 +1,12 @@
-const { prisma } = require("../prisma/prisma.client");
 const uploadFile = require("../utlls/uploadFile");
+const { prisma } = require("../prisma/prisma.client");
 
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
 const register = async (req, res) => {
   try {
-    const { email, password, name, role } = req.body;
+    const { email, password, name } = req.body;
 
     if (!email || !password || !name) {
       return res.status(400).json({ message: "All fields are required" });
@@ -32,7 +32,6 @@ const register = async (req, res) => {
         name,
         email,
         password: hashedPassword,
-        role,
       },
     });
 
@@ -58,6 +57,8 @@ const register = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+
+    console.log(email, password);
 
     if (!email || !password) {
       return res.status(400).json({ message: "All fields are required" });
@@ -102,33 +103,34 @@ const current = async (req, res) => {
 const edit = async (req, res) => {
   try {
     const { name, email } = req.body;
-    const path = req?.file?.path;
 
-    console.log("path ===>", path);
+    const user = await prisma.user.update({
+      where: {
+        id: req.user.id,
+      },
+      data: {
+        name: name || req.user.name,
+        email: email || req.user.email,
+      },
+    });
 
-    uploadFile(path, `avatar${Date.now()}`)
-      .then(async (path) => {
-        const user = await prisma.user.update({
-          where: {
-            id: req.user.id,
-          },
-          data: {
-            name: name || req.user.name,
-            email: email || req.user.email,
-            imageUrl: path || req.user.imageUrl,
-          },
-        });
-
-        res.status(200).json(user);
-      })
-      .catch(() => {
-        res
-          .status(500)
-          .json({ message: "Could not send image to the service" });
-      });
+    res.status(200).json(user);
   } catch (error) {
     console.log(error);
+    res.status(500).json({ message: "Unknown server error" });
+  }
+};
 
+const getOperators = async (req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      where: {
+        role: "OPERATOR",
+      },
+    });
+
+    res.status(200).json(users);
+  } catch (error) {
     res.status(500).json({ message: "Unknown server error" });
   }
 };
@@ -138,4 +140,5 @@ module.exports = {
   login,
   current,
   edit,
+  getOperators,
 };

@@ -15,12 +15,9 @@ app.use(express.urlencoded({ extended: false }));
 app.use("/public", express.static(path.join(__dirname, "public")));
 
 app.use("/api/users", require("./routes/users"));
-app.use("/api/products", require("./routes/items"));
+app.use("/api/tickets", require("./routes/tickets"));
+app.use("/api/comments", require("./routes/comments"));
 app.use("/api/categories", require("./routes/categories"));
-app.use("/api/cart", require("./routes/cart"));
-app.use("/api/favorites", require("./routes/favorites"));
-app.use("/api/sales", require("./routes/sales"));
-app.use("/api/payment", require("./routes/payment"));
-app.use("/api/reviews", require("./routes/reviews"));
+app.use("/api/notifications", require("./routes/notifications"));
 
 module.exports = app;

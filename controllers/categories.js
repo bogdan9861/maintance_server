@@ -1,15 +1,29 @@
 const { prisma } = require("../prisma/prisma.client");
 
-const getAll = async (req, res) => {
-  try {
-    const categories = await prisma.categories.findMany();
+const getCategories = async (req, res) => {
+  const categories = await prisma.category.findMany();
+  res.json(categories);
+};
 
-    res.status(200).json(categories);
-  } catch (error) {
-    res.status(500).json({ message: "Unknown server error" });
-  }
+const createCategory = async (req, res) => {
+  const { name, description } = req.body;
+
+  const category = await prisma.category.create({
+    data: { name, description },
+  });
+
+  res.status(201).json(category);
+};
+
+const deleteCategory = async (req, res) => {
+  const { id } = req.params;
+
+  await prisma.category.delete({ where: { id } });
+  res.sendStatus(204);
 };
 
 module.exports = {
-  getAll,
+  getCategories,
+  createCategory,
+  deleteCategory,
 };

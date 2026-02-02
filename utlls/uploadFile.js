@@ -6,13 +6,19 @@ cloudinary.config({
   api_secret: "pM6SyKdCmtFWFUOp3Bd-fsxxigk",
 });
 
-const uploadFile = async (path, public_id) => {
-  const result = await cloudinary.uploader.upload(path, {
-    public_id,
-    resource_type: "image",
+const uploadFile = async (filePath, publicId, folder = "tickets") => {
+  const result = await cloudinary.uploader.upload(filePath, {
+    public_id: publicId,
+    folder,
+    resource_type: "auto",
   });
 
-  return result.secure_url;
+  return {
+    url: result.secure_url,
+    publicId: result.public_id,
+    resourceType: result.resource_type,
+    format: result.format,
+  };
 };
 
 module.exports = uploadFile;

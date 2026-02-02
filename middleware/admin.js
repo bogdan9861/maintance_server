@@ -2,12 +2,10 @@ const admin = async (req, res, next) => {
   try {
     const { role } = req.user;
 
-    if (role !== "SELLER") {
-      return res
-        .status(403)
-        .json({
-          message: "Только продавец может выставлять товары на продажу",
-        });
+    if (role !== "ADMIN" && role !== "OPERATOR") {
+      return res.status(403).json({
+        message: "Forbiden for you",
+      });
     }
 
     next();
