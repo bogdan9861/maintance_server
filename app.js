@@ -4,6 +4,14 @@ const logger = require("morgan");
 const path = require("path");
 require("dotenv").config();
 
+const {
+  startMaintenanceScheduler,
+} = require("./scheduler/maintenance.scheduler");
+const { startOverdueScheduler } = require("./scheduler/overdue.scheduler");
+
+startMaintenanceScheduler();
+startOverdueScheduler();
+
 const app = express();
 
 app.use(cors({ origin: "*" }));
@@ -15,9 +23,10 @@ app.use(express.urlencoded({ extended: false }));
 app.use("/public", express.static(path.join(__dirname, "public")));
 
 app.use("/api/users", require("./routes/users"));
-app.use("/api/tickets", require("./routes/tickets"));
-app.use("/api/comments", require("./routes/comments"));
-app.use("/api/categories", require("./routes/categories"));
+app.use("/api/products", require("./routes/products"));
+app.use("/api/maintenance", require("./routes/maintenance"));
+app.use("/api/schedule", require("./routes/schedule"));
 app.use("/api/notifications", require("./routes/notifications"));
+app.use("/api/reports", require("./routes/reports"));
 
 module.exports = app;
