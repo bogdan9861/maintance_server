@@ -8,156 +8,166 @@ datasource db {
 }
 
 enum UserRole {
-  CLIENT
-  OPERATOR
   ADMIN
+  ENGINEER
+  MANAGER
 }
 
-enum TicketStatus {
-  NEW
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+  DECOMMISSIONED
+}
+
+enum MaintenanceType {
+  PREVENTIVE
+  CORRECTIVE
+  INSPECTION
+}
+
+enum ScheduleType {
+  BY_TIME // по календарю
+  BY_USAGE // по наработке
+  COMBINED
+}
+
+enum TaskStatus {
+  PLANNED
   IN_PROGRESS
-  NEED_INFO
-  CLOSED
-  REJECTED
-}
-
-enum PriorityLevel {
-  LOW
-  MEDIUM
-  HIGH
-  CRITICAL
-}
-
-enum NotificationType {
-  STATUS_CHANGED
-  COMMENT_ADDED
-  ASSIGNED
-  TICKET_CREATED
-  READED
+  COMPLETED
+  OVERDUE
+  CANCELLED
 }
 
 model User {
-  id       String   @id @default(uuid())
-  email    String   @unique
-  password String
-  name     String
-  role     UserRole @default(CLIENT)
-  isActive Boolean  @default(true)
-
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  firstName String
+  lastName  String
+  role      UserRole @default(MANAGER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relations
-  tickets         Ticket[]        @relation("ClientTickets")
-  assigned        Ticket[]        @relation("AssignedTickets")
-  comments        Comment[]
-  notifications   Notification[]
-  auditLogs       AuditLog[]
-  ticketHistories TicketHistory[]
-}
-
-model Ticket {
-  id          String        @id @default(uuid())
-  title       String
-  description String        @db.Text
-  status      TicketStatus  @default(NEW)
-  priority    PriorityLevel
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  clientId String
-  client   User   @relation("ClientTickets", fields: [clientId], references: [id])
-
-  assignedToId String?
-  assignedTo   User?   @relation("AssignedTickets", fields: [assignedToId], references: [id])
-
-  categoryId String
-  category   Category @relation(fields: [categoryId], references: [id])
-
-  comments      Comment[]
-  attachments   Attachment[]
-  history       TicketHistory[]
+  tasks         MaintenanceTask[]
   notifications Notification[]
 }
 
-model Category {
-  id          String  @id @default(uuid())
+model Product {
+  id           String        @id @default(uuid())
+  name         String
+  serialNumber String        @unique
+  description  String?
+  status       ProductStatus @default(ACTIVE)
+  imageUrl     String?
+
+  commissionDate     DateTime
+  standartUsageHours Float    @default(1100)
+  totalUsageHours    Float    @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  schedules MaintenanceSchedule[]
+  tasks     MaintenanceTask[]
+  reports   Report[]
+}
+
+model MaintenanceTemplate {
+  id          String          @id @default(uuid())
   name        String
-  description String? @db.Text
+  description String?
+  type        MaintenanceType
 
-  tickets Ticket[]
-}
-
-model Comment {
-  id         String  @id @default(uuid())
-  content    String  @db.Text
-  isInternal Boolean @default(false)
+  estimatedHours Float?
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  // Relations
-  authorId String
-  author   User   @relation(fields: [authorId], references: [id])
-
-  ticketId String
-  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  schedules MaintenanceSchedule[]
 }
 
-model Attachment {
-  id       String @id @default(uuid())
-  fileName String
-  filePath String
-  fileType String
+model MaintenanceSchedule {
+  id String @id @default(uuid())
 
-  uploadedAt DateTime @default(now())
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  productId String
 
-  // Relations
-  ticketId String
-  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-}
+  template   MaintenanceTemplate @relation(fields: [templateId], references: [id])
+  templateId String
 
-model TicketHistory {
-  id       String  @id @default(uuid())
-  action   String
-  oldValue String?
-  newValue String?
+  scheduleType ScheduleType
+
+  intervalDays  Int? // если по времени
+  intervalHours Float? // если по наработке
+
+  lastExecutedAt DateTime?
+  lastUsageValue Float?
+
+  isActive Boolean @default(true)
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  // Relations
-  ticketId String
-  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  tasks MaintenanceTask[]
+}
 
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
+model MaintenanceTask {
+  id String @id @default(uuid())
+
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  productId String
+
+  schedule   MaintenanceSchedule? @relation(fields: [scheduleId], references: [id])
+  scheduleId String?
+
+  assignedTo   User?   @relation(fields: [assignedToId], references: [id])
+  assignedToId String?
+
+  status TaskStatus @default(PLANNED)
+
+  plannedDate DateTime
+  dueDate     DateTime?
+  completedAt DateTime?
+
+  usageAtCreation Float?
+
+  comment String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Notification {
-  id      String           @id @default(uuid())
-  type    NotificationType
+  id String @id @default(uuid())
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  title   String
   message String
-  isRead  Boolean          @default(false)
+
+  isRead Boolean @default(false)
 
   createdAt DateTime @default(now())
-
-  ticketId String?
-  ticket   Ticket? @relation(fields: [ticketId], references: [id], onDelete: SetNull)
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
 }
 
 model AuditLog {
-  id        String  @id @default(uuid())
-  action    String
-  ipAddress String?
-  userAgent String?
+  id       String  @id @default(uuid())
+  entity   String
+  entityId String
+  action   String
+  userId   String?
+  metadata Json?
 
   createdAt DateTime @default(now())
+}
 
-  // Relations
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
+model Report {
+  id      String @id @default(uuid())
+  title   String
+  fileUrl String
+
+  product   Product @relation(fields: [productId], references: [id])
+  productId String
 }
