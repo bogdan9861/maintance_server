@@ -8,9 +8,27 @@ const createReport = async (req, res) => {
 
     if (!title || !file || !productId) {
       return res.status(400).json({
-        message: `All fields are required: title: ${title} file: ${!!file} produtId: ${productId}`,
+        message: `All fields are required: title: ${title} file: ${!!file} productId: ${productId}`,
       });
     }
+
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+    });
+
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    const createdAt = new Date(product.createdAt);
+    const commissionDate = new Date(product.commissionDate);
+
+    const diffDays = Math.ceil(
+      (commissionDate - createdAt) / (1000 * 60 * 60 * 24)
+    );
+
+    const nextCommissionDate = new Date(product.commissionDate);
+    nextCommissionDate.setDate(nextCommissionDate.getDate() + diffDays);
 
     uploadFile(file?.path)
       .then(async (file) => {
@@ -23,6 +41,16 @@ const createReport = async (req, res) => {
         });
 
         res.status(201).json(report);
+
+        await prisma.product.update({
+          where: {
+            id: productId,
+          },
+          data: {
+            totalUsageHours: 0,
+            commissionDate: nextCommissionDate,
+          },
+        });
       })
       .catch((e) => {
         res.status(500).json({ message: "Failed to load file" });

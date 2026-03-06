@@ -1,8 +1,9 @@
 const express = require("express");
 const router = express.Router();
 
-const fileMiddleware = require("../middleware/file");
 const { auth } = require("../middleware/auth");
+const fileMiddleware = require("../middleware/file");
+
 const {
   createReport,
   getReportsForProduct,
@@ -10,7 +11,7 @@ const {
 } = require("../controllers/reports");
 
 router.post("/", auth, fileMiddleware.single("file"), createReport);
-router.get("/:productId", auth, getReportsForProduct);
+router.get("/product/:productId", auth, getReportsForProduct);
 router.get("/", auth, getReports);
 
 module.exports = router;

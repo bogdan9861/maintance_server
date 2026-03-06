@@ -103,14 +103,15 @@ const current = async (req, res) => {
 
 const edit = async (req, res) => {
   try {
-    const { name, email } = req.body;
+    const { firstName, lastName, email } = req.body;
 
     const user = await prisma.user.update({
       where: {
         id: req.user.id,
       },
       data: {
-        name: name || req.user.name,
+        firstName: firstName || req.user.firstName,
+        lastName: lastName || req.user.lastName,
         email: email || req.user.email,
       },
     });
